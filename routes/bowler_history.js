@@ -2,68 +2,35 @@ const { promiseReadDir, promiseReadJsonFile } = require("../utils");
 var express = require("express");
 var router = express.Router();
 
-var all_bowler_history_data = [];
+var all_bowler_names = [];
 
 const getRoutes = async () => {
-  all_bowler_history_data = [];
-  console.log("get bowler history routes");
-  var bowler_history_files = await promiseReadDir("bowler_history");
-  bowler_history_files.map((file) => {
-    var name = file.substring(0, file.indexOf("_"));
-    var year = parseInt(
-      file.substring(file.indexOf("_") + 1, file.indexOf("."))
-    );
-    var existing_entry_index = all_bowler_history_data.findIndex(
-      (a) => a.name == name
-    );
-    if (existing_entry_index == -1) {
-      all_bowler_history_data.push({ name: name, years: [year] });
-    } else {
-      all_bowler_history_data[existing_entry_index].years.push(year);
-    }
+  all_bowler_names = [];
+  console.log("refresh bowler history routes");
+  var bowler_history_files = await promiseReadDir("./bowler_history");
+  all_bowler_names = bowler_history_files.map((file) => {
+    return file.substring(0, file.indexOf(".json"));
   });
-  console.log("all_bowler_history_data: ", all_bowler_history_data);
-};
-
-const fileExists = (name, year) => {
-  var return_value = false;
-  var existing_entry_index = all_bowler_history_data.findIndex(
-    (a) => a.name == name
-  );
-  if (existing_entry_index != -1) {
-    return_value = all_bowler_history_data[existing_entry_index].years.some(
-      (y) => y == year
-    );
-  }
-  return return_value;
+  // console.log("all_bowler_names: ", all_bowler_names);
 };
 
 router.get("/", (req, res) => {
-  return res.json({ data: all_bowler_history_data });
+  return res.json(all_bowler_names);
 });
 
 router.get("/:name", async (req, res) => {
-  var bowler_history = all_bowler_history_data.find(
-    (a) => a.name == req.params.name
+  var found_bowler_name = all_bowler_names.find(
+    (name) => name == req.params.name
   );
-  if (!bowler_history) {
+  if (!found_bowler_name) {
     return res.status(404).send();
   }
-  return res.json({ data: bowler_history.years });
-});
-
-router.get("/:name/:year", async (req, res) => {
-  if (!fileExists(req.params.name, req.params.year)) {
-    return res.status(404).send();
-  }
-  var file = `bowler_history/${req.params.name}_${req.params.year}.json`;
+  var file = `./bowler_history/${found_bowler_name}.json`;
   var json_data = await promiseReadJsonFile(file);
-  return res.json({ data: json_data });
+  return res.json(json_data);
 });
 
 getRoutes();
-setTimeout(() => {
-  setInterval(getRoutes, 60000);
-}, 1000);
+setInterval(getRoutes, 60000);
 
 module.exports = router;

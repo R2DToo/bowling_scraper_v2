@@ -1,3 +1,4 @@
 bowler_history/*
 team_info/*
 node_modules
+*.log

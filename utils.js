@@ -8,9 +8,9 @@ exports.promiseReadDir = (directory) => {
       if (error) {
         reject(error);
       }
-      files = files.map((file) => {
-        return file;
-      });
+      // files = files.map((file) => {
+      //   return file;
+      // });
       resolve(files);
     });
   });
