@@ -17,6 +17,7 @@ async function scrape_startup() {
   // await delete_old_files("./bowler_history");
   const options = new Chrome.Options();
   options.addArguments("--headless=new");
+  options.addArguments("--no-sandbox");
   options.setUserPreferences({
     "download.default_directory": path.dirname(__filename) + "/bowler_history/",
   });
@@ -26,7 +27,7 @@ async function scrape_startup() {
     .build();
   try {
     let listOfYearOptions = await getYearOptions(driver);
-    // console.log(listOfYearOptions);
+    // console.log("listOfYearOptions: ", listOfYearOptions);
     for (let yearIndex in listOfYearOptions) {
       let listOfBowlerOptions = await getBowlerOptions(
         driver,
@@ -47,6 +48,7 @@ async function scrape_startup() {
             listOfYearOptions[yearIndex]
           );
           console.log("-----------------------------");
+          await delay(500);
         } catch (e) {
           continue;
         }
@@ -63,6 +65,42 @@ async function scrape_startup() {
 
 async function scrape_daily() {
   console.log("scrape_daily");
+  const options = new Chrome.Options();
+  options.addArguments("--headless=new");
+  options.addArguments("--no-sandbox");
+  options.setUserPreferences({
+    "download.default_directory": path.dirname(__filename) + "/bowler_history/",
+  });
+  let driver = new Builder()
+    .forBrowser("chrome")
+    .setChromeOptions(options)
+    .build();
+  try {
+    let currentYear = DateTime.now().year;
+    let listOfBowlerOptions = await getBowlerOptions(driver, currentYear);
+    // console.log(listOfBowlerOptions);
+    for (let bowlerIndex in listOfBowlerOptions) {
+      try {
+        let downloadedFilePath = await downloadBowlerScores(
+          driver,
+          currentYear,
+          listOfBowlerOptions[bowlerIndex]
+        );
+        console.log(downloadedFilePath);
+        await delay(1000);
+        await addToPersonalJsonScores(downloadedFilePath, currentYear);
+        console.log("-----------------------------");
+      } catch (e) {
+        continue;
+      }
+    }
+    // await addToPersonalJsonScores("dennis-braun-history.csv");
+  } catch (e) {
+    console.error(`ERROR: ${e}`);
+  } finally {
+    console.log("CLOSING WEBDRIVER");
+    await driver.quit();
+  }
 }
 
 async function getYearOptions(driver) {
@@ -148,19 +186,24 @@ async function downloadBowlerScores(driver, year, bowlerObject) {
       await driver.get(
         `https://www.leaguesecretary.com/bowling-centers/rossmere-laneswinnipeg-manitoba/bowling-leagues/challengers/bowler-info/${bowlerObject.name}/${year}/fall/108372/${bowlerObject.id}`
       );
-      let downloadButtonElement = await driver.wait(
-        until.elementLocated(
-          By.id(
-            "ctl00_MainContent_BowlerHistoryGrid1_RadGrid1_ctl00_ctl02_ctl00_ExportToCsvButton"
-          )
-        ),
-        5000
-      );
+      await delay(600);
       await driver.executeScript(
-        "document.getElementById('ctl00_MainContent_BowlerHistoryGrid1_RadGrid1_ctl00_ctl02_ctl00_ExportToCsvButton').scrollIntoView()"
+        "document.getElementById('ctl00_MainContent_BowlerHistoryGrid1_RadGrid1_ctl00_ctl02_ctl00_ExportToCsvButton').click()"
       );
-      // await new Promise((r) => setTimeout(r, 2000));
-      await downloadButtonElement.click();
+      // await driver.executeScript(
+      //   "document.getElementById('ctl00_MainContent_BowlerHistoryGrid1_RadGrid1_ctl00').scrollIntoView()"
+      // );
+      // await delay(200);
+      // let downloadButtonElement = await driver.wait(
+      //   until.elementLocated(
+      //     By.id(
+      //       "ctl00_MainContent_BowlerHistoryGrid1_RadGrid1_ctl00_ctl02_ctl00_ExportToCsvButton"
+      //     )
+      //   ),
+      //   5000
+      // );
+      // await downloadButtonElement.click();
+
       await delay(2500);
       await fs.promises.access(
         `./bowler_history/${downloadedFilePath}`,
@@ -195,11 +238,11 @@ async function addToPersonalJsonScores(downloadedFilePath, year) {
               : parseInt(row[keys[0]]);
           delete row[keys[0]];
           row.Season = parseInt(year) == NaN ? year : parseInt(year);
-          row.Date =
-            row["Date"].substring(
-              0,
-              getNthOccurrence(row["Date"], "/", 2) + 1
-            ) + DateTime.now().year;
+          // row.Date =
+          //   row["Date"].substring(
+          //     0,
+          //     getNthOccurrence(row["Date"], "/", 2) + 1
+          //   ) + DateTime.now().year;
           row.Game1 =
             parseInt(row["Gm1"]) == NaN ? row["Gm1"] : parseInt(row["Gm1"]);
           delete row["Gm1"];
@@ -278,9 +321,11 @@ async function addToPersonalJsonScores(downloadedFilePath, year) {
                 `./bowler_history/${jsonFileName}`
               );
               let existingJson = JSON.parse(existingJsonContent);
-              let newJson = existingJson.filter(
-                (scoreEntry) => scoreEntry.Year != year
-              );
+              let newJson = existingJson.filter((scoreEntry) => {
+                var currentSeason =
+                  parseInt(year) == NaN ? year : parseInt(year);
+                return scoreEntry.Season != currentSeason;
+              });
               newJson = newJson.concat(json);
               await fs.promises.writeFile(
                 `./bowler_history/${jsonFileName}`,

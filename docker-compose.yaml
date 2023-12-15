@@ -1,0 +1,9 @@
+version: "3.8"
+services:
+  bowling_scrapper:
+    # build: .
+    image: r2dtoo/bowling_scrapper:latest
+    ports:
+      - 3131:3131
+    volumes:
+      - /dev/shm:/dev/shm

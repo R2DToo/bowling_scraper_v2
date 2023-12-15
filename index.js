@@ -12,7 +12,7 @@ const startup = async () => {
   app.get("/", (req, res) => {
     return res.status(200).send();
   });
-  await scrape_startup();
+  // await scrape_startup();
   setInterval(async () => {
     await scrape_daily();
   }, 1440 * 60 * 1000);
