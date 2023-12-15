@@ -5,7 +5,7 @@ var bowlerHistoryRouter = require("./routes/bowler_history");
 const { scrape_startup, scrape_daily } = require("./scrapers");
 
 const startup = async () => {
-  app.use("/bowler_history", bowlerHistoryRouter);
+  app.use("/bowler", bowlerHistoryRouter);
   app.listen(3131, async () => {
     console.log("Listening on post 3131");
   });
