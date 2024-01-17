@@ -76,7 +76,8 @@ async function scrape_daily() {
     .setChromeOptions(options)
     .build();
   try {
-    let currentYear = DateTime.now().year;
+    let listOfYearOptions = await getYearOptions(driver);
+    let currentYear = listOfYearOptions[listOfYearOptions.length - 1];
     let listOfBowlerOptions = await getBowlerOptions(driver, currentYear);
     // console.log(listOfBowlerOptions);
     for (let bowlerIndex in listOfBowlerOptions) {
