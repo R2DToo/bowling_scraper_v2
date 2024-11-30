@@ -1,8 +1,8 @@
 version: "3.8"
 services:
   bowling_scrapper:
-    # build: .
-    image: r2dtoo/bowling_scrapper:latest
+    build: .
+    pull_policy: build
     ports:
       - 3131:3131
     volumes:
