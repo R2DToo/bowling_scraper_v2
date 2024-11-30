@@ -215,8 +215,8 @@ export const firstRun = async (db) => {
 
   // Scrape all years of weeklyScores
   const weeklyScoresArray = await scrapeHistoricalWeeklyScores(db);
-  console.log("Inserting into `weeklyScores` table");
-  await db("weeklyScores").insert(weeklyScoresArray);
+  // console.log("Inserting into `weeklyScores` table");
+  // await db("weeklyScores").insert(weeklyScoresArray);
 };
 
 export const dailyRun = async (db) => {
