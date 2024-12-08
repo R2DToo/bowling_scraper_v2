@@ -26,6 +26,7 @@ const createTables = async (db) => {
     table.smallint("avg_after").notNullable(); // Average after the game
     table.smallint("avg_today").notNullable(); // Average today
     table.smallint("avg_change").notNullable(); // Change in average
+    table.unique(["bowlerName", "date", "week"]);
   });
   console.log("Created `weeklyScores` table");
 };
@@ -171,36 +172,28 @@ const getBowlerHistory = async (year, id, name) => {
   });
 };
 
-const scrapeHistoricalWeeklyScores = async (db) => {
-  console.log("starting scrapeHistoricalWeeklyScores");
-  const bowlers = await db("bowlers")
-    .select("bowlerId", "bowlerName", "bowlerYear")
-    .orderBy([
-      {
-        column: "bowlerId",
-        order: "asc",
-      },
-      {
-        column: "bowlerYear",
-        order: "asc",
-      },
-    ]);
-  let weeklyScoresArray = [];
-  // for (const i of [0, 1, 2, 3, 4]) {
-  // const bowler = bowlers[i];
-  for (const bowler of bowlers) {
-    try {
-      let bowlerHistory = await getBowlerHistory(
-        bowler.bowlerYear,
-        bowler.bowlerId,
-        bowler.bowlerName
-      );
-      weeklyScoresArray.push(...bowlerHistory);
-    } catch (err) {}
+const insertBowlerHistory = async (db, bowler, bowlerHistory) => {
+  try {
+    console.log(
+      "Inserting into `weeklyScores` table for " +
+        bowler.bowlerName +
+        " - " +
+        bowler.bowlerYear
+    );
+    await db("weeklyScores")
+      .insert(bowlerHistory)
+      .onConflict(["bowlerName", "week", "date"])
+      .merge();
+  } catch (err) {
+    console.log(
+      "Error while inserting into `weeklyScores` table for " +
+        bowler.bowlerName +
+        " - " +
+        bowler.bowlerYear +
+        " Error: " +
+        err.message
+    );
   }
-  console.log("scraping complete for HistoricalWeeklyScores");
-  // console.log(weeklyScoresArray[0]);
-  return weeklyScoresArray;
 };
 
 export const firstRun = async (db) => {
@@ -213,12 +206,48 @@ export const firstRun = async (db) => {
 
   await db("bowlers").insert(bowlersTableJson);
 
-  // Scrape all years of weeklyScores
-  const weeklyScoresArray = await scrapeHistoricalWeeklyScores(db);
-  // console.log("Inserting into `weeklyScores` table");
-  // await db("weeklyScores").insert(weeklyScoresArray);
+  const allBowlers = await db("bowlers")
+    .select("bowlerId", "bowlerName", "bowlerYear")
+    .orderBy([
+      {
+        column: "bowlerId",
+        order: "asc",
+      },
+      {
+        column: "bowlerYear",
+        order: "asc",
+      },
+    ]);
+  for (const bowler of allBowlers) {
+    let bowlerHistory = await getBowlerHistory(
+      bowler.bowlerYear,
+      bowler.bowlerId,
+      bowler.bowlerName
+    );
+    await insertBowlerHistory(db, bowler, bowlerHistory);
+  }
+  console.log("firstRun complete");
 };
 
 export const dailyRun = async (db) => {
   console.log("starting dailyRun");
+  const currentBowlers = await db("bowlers")
+    .select("bowlerId", "bowlerName", "bowlerYear")
+    .where("bowlerYear", "=", db("bowlers").max("bowlerYear"))
+    .orderBy([
+      {
+        column: "bowlerId",
+        order: "asc",
+      },
+    ]);
+  for (const bowler of currentBowlers) {
+    // TODO This method returns an exception if an http error is received and then stops the flow of the program
+    let bowlerHistory = await getBowlerHistory(
+      bowler.bowlerYear,
+      bowler.bowlerId,
+      bowler.bowlerName
+    );
+    await insertBowlerHistory(db, bowler, bowlerHistory);
+  }
+  console.log("dailyRun complete");
 };

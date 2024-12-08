@@ -1,5 +1,5 @@
-// Wait for tracing to initialize before proceeding
-import "./tracing.mjs";
+// import "./tracing.mjs";
+import "dotenv/config";
 import knex from "knex";
 import * as cheerio from "cheerio";
 import { dailyRun, firstRun } from "./utils.mjs";
@@ -18,7 +18,7 @@ import { dailyRun, firstRun } from "./utils.mjs";
   });
   console.log("Database Connected");
 
-  // Drop the table if it exists and check schema
+  // Drop the table if it exists for testing purposes
   await db.schema.dropTableIfExists("bowlers");
   const bowlersExists = await db.schema.hasTable("bowlers");
   const weeklyScoresExists = await db.schema.hasTable("weeklyScores");
@@ -29,14 +29,15 @@ import { dailyRun, firstRun } from "./utils.mjs";
 
   if (bowlersExists && weeklyScoresExists) {
     console.log("Program will proceed with daily run flow");
-    setInterval(() => {
-      dailyRun(db);
+    await dailyRun(db);
+    setInterval(async () => {
+      await dailyRun(db);
     }, 5 * 60 * 1000);
   } else {
     console.log("Program will proceed with first run flow");
     await firstRun(db);
-    setInterval(() => {
-      dailyRun(db);
+    setInterval(async () => {
+      await dailyRun(db);
     }, 5 * 60 * 1000);
   }
 })();
