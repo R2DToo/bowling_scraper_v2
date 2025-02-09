@@ -19,7 +19,7 @@ import { dailyRun, firstRun } from "./utils.mjs";
   console.log("Database Connected");
 
   // Drop the table if it exists for testing purposes
-  await db.schema.dropTableIfExists("bowlers");
+  // await db.schema.dropTableIfExists("bowlers");
   const bowlersExists = await db.schema.hasTable("bowlers");
   const weeklyScoresExists = await db.schema.hasTable("weeklyScores");
 
@@ -32,12 +32,12 @@ import { dailyRun, firstRun } from "./utils.mjs";
     await dailyRun(db);
     setInterval(async () => {
       await dailyRun(db);
-    }, 5 * 60 * 1000);
+    }, 24 * 60 * 60 * 1000);
   } else {
     console.log("Program will proceed with first run flow");
     await firstRun(db);
     setInterval(async () => {
       await dailyRun(db);
-    }, 5 * 60 * 1000);
+    }, 24 * 60 * 60 * 1000);
   }
 })();

@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "format": "npx prettier --write .",
-    "start": "NODE_OPTIONS='--import ./tracing.mjs --experimental-loader=@opentelemetry/instrumentation/hook.mjs' node index2.mjs"
+    "start": "node index.mjs"
   },
   "keywords": [],
   "author": "",

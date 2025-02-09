@@ -1,4 +1,4 @@
-FROM timbru31/node-chrome:iron
+FROM node:22
 
 WORKDIR /usr/src/app
 
@@ -10,4 +10,4 @@ COPY . .
 
 EXPOSE 3131
 
-CMD [ "node", "index.js" ]
+CMD [ "node", "index.mjs" ]
